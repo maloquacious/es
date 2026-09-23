@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+readonly go_version="1.21.6"
+
+log() {
+	printf '[orb setup] %s\n' "$*"
+}
+
+install_go() {
+	local architecture archive checksum download
+	case "$(dpkg --print-architecture)" in
+		amd64)
+			architecture="amd64"
+			checksum="3f934f40ac360b9c01f616a9aa1796d227d8b0328bf64cb045c7b8c4ee9caea4"
+			;;
+		arm64)
+			architecture="arm64"
+			checksum="e2e8aa88e1b5170a0d495d7d9c766af2b2b6c6925a8f8956d834ad6b4cacbd9a"
+			;;
+		*)
+			printf 'Unsupported architecture: %s\n' "$(dpkg --print-architecture)" >&2
+			exit 1
+			;;
+	esac
+
+	archive="go${go_version}.linux-${architecture}.tar.gz"
+	download="$(mktemp)"
+
+	log "downloading Go ${go_version}"
+	curl -fsSL "https://go.dev/dl/${archive}" -o "$download"
+	printf '%s  %s\n' "$checksum" "$download" | sha256sum --check --status
+	sudo rm -rf /usr/local/go
+	sudo tar -C /usr/local -xzf "$download"
+	rm -f "$download"
+}
+
+start=$SECONDS
+log "checking system prerequisites"
+missing_packages=()
+for package in ca-certificates curl; do
+	if ! dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q 'ok installed'; then
+		missing_packages+=("$package")
+	fi
+done
+if ((${#missing_packages[@]})); then
+	sudo apt-get update
+	sudo apt-get install -y "${missing_packages[@]}"
+fi
+
+if [[ ! -x /usr/local/go/bin/go ]] || [[ "$(/usr/local/go/bin/go env GOVERSION)" != "go${go_version}" ]]; then
+	install_go
+else
+	log "Go ${go_version} is already installed"
+fi
+
+sudo ln -sf /usr/local/go/bin/go /usr/local/bin/go
+sudo ln -sf /usr/local/go/bin/gofmt /usr/local/bin/gofmt
+
+log "downloading Go module dependencies"
+/usr/local/go/bin/go mod download
+log "complete in $((SECONDS - start))s"
