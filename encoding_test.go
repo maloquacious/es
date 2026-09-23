@@ -17,6 +17,7 @@ func TestEncodingBufferAPI(t *testing.T) {
 	}{
 		{"Crockford", es.Crockford, []byte("foobar"), "CSQPYRK1E8"},
 		{"z-base-32", es.ZBase32, []byte("hello"), "pb1sa5dx"},
+		{"word-safe", es.WordSafe, []byte("hello"), "M3Wgjq5Q"},
 	}
 
 	for _, test := range tests {
@@ -48,6 +49,7 @@ func TestEncodingIntegerVectors(t *testing.T) {
 	}{
 		{"Crockford", es.Crockford, "00000AG", "000000000002M"},
 		{"z-base-32", es.ZBase32, "yyyyyko", "yyyyyyyyyyynw"},
+		{"word-safe", es.WordSafe, "22222GR", "222222222224c"},
 	}
 
 	for _, test := range tests {
@@ -69,6 +71,7 @@ func TestEncodingIntegerRoundTrip(t *testing.T) {
 	}{
 		{"Crockford", es.Crockford},
 		{"z-base-32", es.ZBase32},
+		{"word-safe", es.WordSafe},
 	}
 
 	for _, test := range codecs {
@@ -103,6 +106,7 @@ func TestDecodeIntegerRejectsWrongWidth(t *testing.T) {
 	}{
 		{"Crockford", es.Crockford},
 		{"z-base-32", es.ZBase32},
+		{"word-safe", es.WordSafe},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got, err := test.codec.DecodeInt32(test.codec.EncodeToString([]byte{1})); err == nil {

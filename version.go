@@ -4,8 +4,8 @@ import "github.com/maloquacious/semver"
 
 var (
 	version = semver.Version{
-		Major: 0,
-		Minor: 2,
+		Major: 1,
+		Minor: 0,
 		Patch: 0,
 
 		// Automatically populate build metadata with commit info

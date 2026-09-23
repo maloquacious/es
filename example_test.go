@@ -25,3 +25,13 @@ func ExampleZBase32() {
 	// pb1sa5dx
 	// hello, <nil>
 }
+
+func ExampleWordSafe() {
+	encoded := es.WordSafe.EncodeToString([]byte("hello"))
+	decoded, err := es.WordSafe.DecodeString(encoded)
+	fmt.Println(encoded)
+	fmt.Printf("%s, %v\n", decoded, err)
+	// Output:
+	// M3Wgjq5Q
+	// hello, <nil>
+}
