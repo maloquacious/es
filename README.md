@@ -18,6 +18,20 @@ zDecoded, err := es.ZBase32.DecodeString(zEncoded)
 Both values implement `es.Encoding`, whose buffer, string, and length methods
 follow the API shape of Go's `encoding/base64.Encoding`.
 
+The interface also provides fixed-width, big-endian integer helpers. For
+example, with z-base-32:
+
+```go
+encoded32 := es.ZBase32.EncodeInt32(42) // "yyyyyko"
+decoded32, err := es.ZBase32.DecodeInt32(encoded32)
+
+encoded64 := es.ZBase32.EncodeInt64(42) // "yyyyyyyyyyynw"
+decoded64, err := es.ZBase32.DecodeInt64(encoded64)
+```
+
+Signed integers are encoded using their two's-complement bit pattern, so every
+Int32 encoding represents four bytes and every Int64 encoding represents eight.
+
 Crockford decoding is case-insensitive, ignores hyphens, maps `I` and `L` to
 `1`, and maps `O` to `0`. z-base-32 decoding is case-insensitive. Both decoders
 reject padding, invalid lengths, and non-zero trailing padding bits.

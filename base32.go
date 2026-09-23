@@ -2,6 +2,7 @@ package es
 
 import (
 	"encoding/base32"
+	"encoding/binary"
 	"fmt"
 )
 
@@ -10,12 +11,18 @@ import (
 //
 // Encode and Decode require destination buffers large enough to hold the
 // result. EncodedLen and DecodedLen calculate the required maximum sizes.
+// The integer helpers encode fixed-width big-endian two's-complement values;
+// their decoders reject input that does not represent exactly 4 or 8 bytes.
 type Encoding interface {
 	Encode(dst, src []byte)
 	EncodeToString(src []byte) string
+	EncodeInt32(src int32) string
+	EncodeInt64(src int64) string
 	EncodedLen(n int) int
 	Decode(dst, src []byte) (n int, err error)
 	DecodeString(src string) ([]byte, error)
+	DecodeInt32(src string) (int32, error)
+	DecodeInt64(src string) (int64, error)
 	DecodedLen(n int) int
 }
 
@@ -43,6 +50,18 @@ func (enc *base32Encoding) Encode(dst, src []byte) {
 
 func (enc *base32Encoding) EncodeToString(src []byte) string {
 	return enc.encoding.EncodeToString(src)
+}
+
+func (enc *base32Encoding) EncodeInt32(src int32) string {
+	var buf [4]byte
+	binary.BigEndian.PutUint32(buf[:], uint32(src))
+	return enc.EncodeToString(buf[:])
+}
+
+func (enc *base32Encoding) EncodeInt64(src int64) string {
+	var buf [8]byte
+	binary.BigEndian.PutUint64(buf[:], uint64(src))
+	return enc.EncodeToString(buf[:])
 }
 
 func (enc *base32Encoding) EncodedLen(n int) int {
@@ -83,6 +102,28 @@ func (enc *base32Encoding) DecodeString(src string) ([]byte, error) {
 		return nil, err
 	}
 	return dst[:n], nil
+}
+
+func (enc *base32Encoding) DecodeInt32(src string) (int32, error) {
+	decoded, err := enc.DecodeString(src)
+	if err != nil {
+		return 0, err
+	}
+	if len(decoded) != 4 {
+		return 0, fmt.Errorf("es: decoded %s Int32 has %d bytes, want 4", enc.name, len(decoded))
+	}
+	return int32(binary.BigEndian.Uint32(decoded)), nil
+}
+
+func (enc *base32Encoding) DecodeInt64(src string) (int64, error) {
+	decoded, err := enc.DecodeString(src)
+	if err != nil {
+		return 0, err
+	}
+	if len(decoded) != 8 {
+		return 0, fmt.Errorf("es: decoded %s Int64 has %d bytes, want 8", enc.name, len(decoded))
+	}
+	return int64(binary.BigEndian.Uint64(decoded)), nil
 }
 
 func (enc *base32Encoding) DecodedLen(n int) int {
